@@ -7,7 +7,7 @@ TFLM_MAKEFILE := tflite-micro/tensorflow/lite/micro/tools/make/Makefile
 all: microlite microlite-m7 tflm_main
 
 tflite-micro:
-	git clone https://github.com/tensorflow/tflite-micro.git
+	test -d tflite-micro || git clone https://github.com/tensorflow/tflite-micro.git
 	git -C tflite-micro checkout $(TFLM_COMMIT)
 
 microlite: tflite-micro
