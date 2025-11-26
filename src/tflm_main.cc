@@ -113,7 +113,6 @@ TFLM_FOREACH_MODEL(RUN_MODEL);
 #undef RUN_MODEL
 
   MicroPrintf("All models ran successfully.");
-
   return 0;
 }
 
