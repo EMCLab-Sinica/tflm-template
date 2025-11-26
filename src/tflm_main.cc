@@ -13,6 +13,8 @@ namespace {
 constexpr int kTensorArenaSize = 300000;
 alignas(16) uint8_t tensor_arena[kTensorArenaSize];
 
+bool g_print_outputs = false;
+
 int CalculateElementCount(const TfLiteTensor* tensor) {
   int count = 1;
   for (int i = 0; i < tensor->dims->size; ++i)
@@ -40,6 +42,9 @@ void FillInput(TfLiteTensor* input) {
 }
 
 void LogOutput(const TfLiteTensor* output) {
+  if (!g_print_outputs)
+    return;
+
   const int total_size = CalculateElementCount(output);
   switch (output->type) {
     case kTfLiteFloat32:
@@ -62,7 +67,7 @@ void LogOutput(const TfLiteTensor* output) {
 
 template <int kMaxOps, typename AddOpsFn>
 int InvokeModel(const unsigned char* model_data, size_t model_length, const char* model_name, AddOpsFn add_ops) {
-  MicroPrintf("%s: started (%u bytes)", model_name, static_cast<unsigned int>(model_length));
+  MicroPrintf("%s: started (%u bytes).", model_name, static_cast<unsigned int>(model_length));
   tflite::InitializeTarget();
 
   const tflite::Model* model = tflite::GetModel(model_data);
@@ -81,7 +86,7 @@ int InvokeModel(const unsigned char* model_data, size_t model_length, const char
   TF_LITE_ENSURE_STATUS(interpreter.Invoke());
   LogOutput(output);
 
-  MicroPrintf("%s: finished", model_name);
+  MicroPrintf("%s: finished.", model_name);
   return 0;
 }
 }  // namespace
@@ -92,17 +97,22 @@ void register_debug_log_callback(void (*callback)(const char* s)) {
 #endif
 }
 
+void set_print_output(int enable) {
+  g_print_outputs = (enable != 0);
+}
+
 int tflm_main() {
 
-#define RUN_MODEL(symbol, display_name)             \
-  {                                                 \
-    MicroPrintf("Running model: %s", display_name); \
-    const int result = tflm_main_##symbol();        \
-    if (result != 0)                                \
-      return result;                                \
+#define RUN_MODEL(symbol, display_name)      \
+  {                                          \
+    const int result = tflm_main_##symbol(); \
+    if (result != 0)                         \
+      return result;                         \
   }
 TFLM_FOREACH_MODEL(RUN_MODEL);
 #undef RUN_MODEL
+
+  MicroPrintf("All models ran successfully.");
 
   return 0;
 }

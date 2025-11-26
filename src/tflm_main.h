@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 void register_debug_log_callback(void (*callback)(const char* s));
+void set_print_output(int enable);
 int tflm_main();
 
 #define DECLARE_TFLM_MAIN(symbol, display_name) int tflm_main_##symbol();
