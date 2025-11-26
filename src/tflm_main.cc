@@ -27,13 +27,15 @@ void FillInput(TfLiteTensor* input) {
   switch (input->type) {
     case kTfLiteFloat32:
       for (int i = 0; i < total_size; ++i)
-        input->data.f[i] = 0.0f;
+        input->data.f[i] = static_cast<float>(i % 7);
       break;
     case kTfLiteInt8:
-      std::memset(input->data.int8, 0, total_size * sizeof(int8_t));
+      for (int i = 0; i < total_size; ++i)
+        input->data.int8[i] = static_cast<int8_t>(i % 7);
       break;
     case kTfLiteUInt8:
-      std::memset(input->data.uint8, 0, total_size * sizeof(uint8_t));
+      for (int i = 0; i < total_size; ++i)
+        input->data.uint8[i] = static_cast<uint8_t>(i % 7);
       break;
     default:
       MicroPrintf("Input fill skipped for unsupported tensor type (%d).", input->type);
