@@ -104,18 +104,25 @@ void set_print_output(int enable) {
 }
 
 int tflm_main() {
+  bool had_failure = false;
 
-#define RUN_MODEL(symbol, display_name)      \
-  {                                          \
-    const int result = tflm_main_##symbol(); \
-    if (result != 0)                         \
-      return result;                         \
+#define RUN_MODEL(symbol, display_name)                             \
+  {                                                                 \
+    const int status = tflm_main_##symbol();                        \
+    if (status != 0) {                                              \
+      MicroPrintf("%s: failed (status %d).", display_name, status); \
+      had_failure = true;                                           \
+    }                                                               \
   }
 TFLM_FOREACH_MODEL(RUN_MODEL);
 #undef RUN_MODEL
 
-  MicroPrintf("All models ran successfully.");
-  return 0;
+  if (!had_failure)
+    MicroPrintf("All models ran successfully.");
+  else
+    MicroPrintf("One or more models failed.");
+
+  return had_failure ? 1 : 0;
 }
 
 #define DEFINE_TFLM_MAIN(symbol, display_name)                                                   \
