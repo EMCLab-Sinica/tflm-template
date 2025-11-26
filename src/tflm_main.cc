@@ -92,6 +92,21 @@ void register_debug_log_callback(void (*callback)(const char* s)) {
 #endif
 }
 
+int tflm_main() {
+
+#define RUN_MODEL(symbol, display_name)             \
+  {                                                 \
+    MicroPrintf("Running model: %s", display_name); \
+    const int result = tflm_main_##symbol();        \
+    if (result != 0)                                \
+      return result;                                \
+  }
+TFLM_FOREACH_MODEL(RUN_MODEL);
+#undef RUN_MODEL
+
+  return 0;
+}
+
 #define DEFINE_TFLM_MAIN(symbol, display_name)                                                   \
   int tflm_main_##symbol() {                                                                     \
     auto add_ops = [&](tflite::MicroMutableOpResolver<TFLM_MODEL_OP_COUNT_##symbol>& resolver) { \
@@ -107,18 +122,3 @@ void register_debug_log_callback(void (*callback)(const char* s)) {
   }
 TFLM_FOREACH_MODEL(DEFINE_TFLM_MAIN)
 #undef DEFINE_TFLM_MAIN
-
-int tflm_main() {
-
-#define RUN_MODEL(symbol, display_name)             \
-  {                                                 \
-    MicroPrintf("Running model: %s", display_name); \
-    const int result = tflm_main_##symbol();        \
-    if (result != 0)                                \
-      return result;                                \
-  }
-TFLM_FOREACH_MODEL(RUN_MODEL);
-#undef RUN_MODEL
-
-  return 0;
-}
