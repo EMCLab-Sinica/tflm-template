@@ -148,13 +148,13 @@ def main():
             raise SystemExit(f"Sanitized names collide: {seen[symbol]} vs {stem}")
         seen[symbol] = stem
 
-    models_with_ops = []
     models_bytes = []
+    models_with_ops = []
     for symbol, stem, path in sanitized:
-        ops = [to_camel(op_name) for op_name in get_op_names(data)]
         data = path.read_bytes()
-        models_with_ops.append((symbol, stem, ops))
+        ops = [to_camel(op_name) for op_name in get_op_names(data)]
         models_bytes.append((symbol, stem, data))
+        models_with_ops.append((symbol, stem, ops))
 
     write_header(out_dir, models_with_ops)
     write_source(out_dir, models_bytes)
