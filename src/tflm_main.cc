@@ -10,7 +10,7 @@
 #include "tensorflow/lite/micro/system_setup.h"
 
 namespace {
-constexpr int kTensorArenaSize = 300000;
+constexpr int kTensorArenaSize = 307200;
 alignas(16) uint8_t tensor_arena[kTensorArenaSize];
 
 bool g_print_outputs = false;
