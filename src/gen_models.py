@@ -89,7 +89,6 @@ def write_header(out_dir, models):
 
 #include <stddef.h>
 #include <stdint.h>
-#include "tensorflow/lite/core/c/common.h"
 
 {os.linesep.join(macro_lines)}
 
