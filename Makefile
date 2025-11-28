@@ -1,4 +1,6 @@
 JOBS ?= 8
+TENSOR_ARENA_SIZE ?= 307200
+
 TFLM_COMMIT := 6c1c1a8
 TFLM_MAKEFILE := tflite-micro/tensorflow/lite/micro/tools/make/Makefile
 
@@ -23,6 +25,7 @@ microlite-m7: tflite-micro
 tflm_main: microlite main.cpp
 	g++ main.cpp \
 	  -Wall \
+	  -DTENSOR_ARENA_SIZE=$(TENSOR_ARENA_SIZE) \
 	  -Itflite-micro \
 	  -Lgen/linux_x86_64_debug_gcc/lib \
 	  -ltensorflow-microlite \
@@ -31,6 +34,7 @@ tflm_main: microlite main.cpp
 dummy: microlite main.cpp
 	g++ main.cpp \
 	  -Wall \
+	  -DTENSOR_ARENA_SIZE=$(TENSOR_ARENA_SIZE) \
 	  -DTF_LITE_STATIC_MEMORY \
 	  -Itflite-micro \
 	  -Itflite-micro/tensorflow/lite/micro/tools/make/downloads/flatbuffers/include \
