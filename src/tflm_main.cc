@@ -10,9 +10,6 @@
 #include "tensorflow/lite/micro/system_setup.h"
 
 namespace {
-constexpr int kTensorArenaSize = 307200;
-alignas(16) uint8_t tensor_arena[kTensorArenaSize];
-
 bool g_print_outputs = false;
 
 int CalculateElementCount(const TfLiteTensor* tensor) {
@@ -68,7 +65,12 @@ void LogOutput(const TfLiteTensor* output) {
 }
 
 template <int kMaxOps, typename AddOpsFn>
-int InvokeModel(const unsigned char* model_data, size_t model_length, const char* model_name, AddOpsFn add_ops) {
+int InvokeModel(const unsigned char* model_data,
+                size_t model_length,
+                const char* model_name,
+                AddOpsFn add_ops,
+                uint8_t* tensor_arena,
+                int tensor_arena_size) {
   MicroPrintf("%s: started (%u bytes).", model_name, static_cast<unsigned int>(model_length));
   tflite::InitializeTarget();
 
@@ -78,7 +80,7 @@ int InvokeModel(const unsigned char* model_data, size_t model_length, const char
   tflite::MicroMutableOpResolver<kMaxOps> op_resolver;
   TF_LITE_ENSURE_STATUS(add_ops(op_resolver));
 
-  tflite::MicroInterpreter interpreter(model, op_resolver, tensor_arena, kTensorArenaSize);
+  tflite::MicroInterpreter interpreter(model, op_resolver, tensor_arena, tensor_arena_size);
   TF_LITE_ENSURE_STATUS(interpreter.AllocateTensors());
 
   TfLiteTensor* input = interpreter.input(0);
@@ -103,16 +105,17 @@ void set_print_output(int enable) {
   g_print_outputs = (enable != 0);
 }
 
-int tflm_main() {
+int tflm_main(uint8_t* tensor_arena, int tensor_arena_size) {
   bool had_failure = false;
 
-#define RUN_MODEL(symbol, display_name)                             \
-  {                                                                 \
-    const int status = tflm_main_##symbol();                        \
-    if (status != 0) {                                              \
-      MicroPrintf("%s: failed (status %d).", display_name, status); \
-      had_failure = true;                                           \
-    }                                                               \
+#define RUN_MODEL(symbol, display_name)                                     \
+  {                                                                         \
+    const int status = tflm_main_##symbol(tensor_arena, tensor_arena_size); \
+    if (status != 0) {                                                      \
+      MicroPrintf("%s: failed (status %d).", display_name, status);         \
+      had_failure = true;                                                   \
+    }                                                                       \
+    MicroPrintf("");                                                        \
   }
 TFLM_FOREACH_MODEL(RUN_MODEL);
 #undef RUN_MODEL
@@ -126,7 +129,7 @@ TFLM_FOREACH_MODEL(RUN_MODEL);
 }
 
 #define DEFINE_TFLM_MAIN(symbol, display_name)                                                   \
-  int tflm_main_##symbol() {                                                                     \
+  int tflm_main_##symbol(uint8_t* tensor_arena, int tensor_arena_size) {                         \
     auto add_ops = [&](tflite::MicroMutableOpResolver<TFLM_MODEL_OP_COUNT_##symbol>& resolver) { \
       TFLM_APPLY_MODEL_OPS_##symbol(resolver);                                                   \
       return kTfLiteOk;                                                                          \
@@ -135,7 +138,9 @@ TFLM_FOREACH_MODEL(RUN_MODEL);
       g_model_data_##symbol,                                                                     \
       g_model_data_##symbol##_len,                                                               \
       display_name,                                                                              \
-      add_ops                                                                                    \
+      add_ops,                                                                                   \
+      tensor_arena,                                                                              \
+      tensor_arena_size                                                                          \
     );                                                                                           \
   }
 TFLM_FOREACH_MODEL(DEFINE_TFLM_MAIN)

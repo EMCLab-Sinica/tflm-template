@@ -8,9 +8,10 @@ extern "C" {
 
 void register_debug_log_callback(void (*callback)(const char* s));
 void set_print_output(int enable);
-int tflm_main();
+int tflm_main(uint8_t* tensor_arena, int tensor_arena_size);
 
-#define DECLARE_TFLM_MAIN(symbol, display_name) int tflm_main_##symbol();
+#define DECLARE_TFLM_MAIN(symbol, display_name) \
+  int tflm_main_##symbol(uint8_t* tensor_arena, int tensor_arena_size);
 TFLM_FOREACH_MODEL(DECLARE_TFLM_MAIN)
 #undef DECLARE_TFLM_MAIN
 
