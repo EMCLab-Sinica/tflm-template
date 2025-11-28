@@ -105,6 +105,24 @@ void set_print_output(int enable) {
   g_print_outputs = (enable != 0);
 }
 
+#define DEFINE_TFLM_MAIN(symbol, display_name)                                                   \
+  int tflm_main_##symbol(uint8_t* tensor_arena, int tensor_arena_size) {                         \
+    auto add_ops = [&](tflite::MicroMutableOpResolver<TFLM_MODEL_OP_COUNT_##symbol>& resolver) { \
+      TFLM_APPLY_MODEL_OPS_##symbol(resolver);                                                   \
+      return kTfLiteOk;                                                                          \
+    };                                                                                           \
+    return InvokeModel<TFLM_MODEL_OP_COUNT_##symbol>(                                            \
+      g_model_data_##symbol,                                                                     \
+      g_model_data_##symbol##_len,                                                               \
+      display_name,                                                                              \
+      add_ops,                                                                                   \
+      tensor_arena,                                                                              \
+      tensor_arena_size                                                                          \
+    );                                                                                           \
+  }
+TFLM_FOREACH_MODEL(DEFINE_TFLM_MAIN)
+#undef DEFINE_TFLM_MAIN
+
 int tflm_main(uint8_t* tensor_arena, int tensor_arena_size) {
   bool had_failure = false;
 
@@ -127,21 +145,3 @@ TFLM_FOREACH_MODEL(RUN_MODEL);
 
   return had_failure ? 1 : 0;
 }
-
-#define DEFINE_TFLM_MAIN(symbol, display_name)                                                   \
-  int tflm_main_##symbol(uint8_t* tensor_arena, int tensor_arena_size) {                         \
-    auto add_ops = [&](tflite::MicroMutableOpResolver<TFLM_MODEL_OP_COUNT_##symbol>& resolver) { \
-      TFLM_APPLY_MODEL_OPS_##symbol(resolver);                                                   \
-      return kTfLiteOk;                                                                          \
-    };                                                                                           \
-    return InvokeModel<TFLM_MODEL_OP_COUNT_##symbol>(                                            \
-      g_model_data_##symbol,                                                                     \
-      g_model_data_##symbol##_len,                                                               \
-      display_name,                                                                              \
-      add_ops,                                                                                   \
-      tensor_arena,                                                                              \
-      tensor_arena_size                                                                          \
-    );                                                                                           \
-  }
-TFLM_FOREACH_MODEL(DEFINE_TFLM_MAIN)
-#undef DEFINE_TFLM_MAIN
