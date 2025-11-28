@@ -70,7 +70,8 @@ int InvokeModel(const unsigned char* model_data,
                 const char* model_name,
                 AddOpsFn add_ops,
                 uint8_t* tensor_arena,
-                int tensor_arena_size) {
+                int tensor_arena_size,
+                uint32_t (*get_time_ms)()) {
   MicroPrintf("%s: started (%u bytes).", model_name, static_cast<unsigned int>(model_length));
   tflite::InitializeTarget();
 
@@ -87,10 +88,26 @@ int InvokeModel(const unsigned char* model_data,
   TfLiteTensor* output = interpreter.output(0);
 
   FillInput(input);
+
+  uint32_t start_ms = 0;
+  uint32_t end_ms = 0;
+  const bool timing_available = (get_time_ms != nullptr);
+
+  if (timing_available)
+    start_ms = get_time_ms();
+
   TF_LITE_ENSURE_STATUS(interpreter.Invoke());
+
+  if (timing_available) {
+    end_ms = get_time_ms();
+    const uint32_t duration_ms = end_ms - start_ms;
+    MicroPrintf("%s: completed in %lu ms.", model_name, static_cast<unsigned long>(duration_ms));
+  } else {
+    MicroPrintf("%s: completed (timing unavailable).", model_name);
+  }
+
   LogOutput(output);
 
-  MicroPrintf("%s: finished.", model_name);
   return 0;
 }
 }  // namespace
@@ -105,35 +122,36 @@ void set_print_output(int enable) {
   g_print_outputs = (enable != 0);
 }
 
-#define DEFINE_TFLM_MAIN(symbol, display_name)                                                   \
-  int tflm_main_##symbol(uint8_t* tensor_arena, int tensor_arena_size) {                         \
-    auto add_ops = [&](tflite::MicroMutableOpResolver<TFLM_MODEL_OP_COUNT_##symbol>& resolver) { \
-      TFLM_APPLY_MODEL_OPS_##symbol(resolver);                                                   \
-      return kTfLiteOk;                                                                          \
-    };                                                                                           \
-    return InvokeModel<TFLM_MODEL_OP_COUNT_##symbol>(                                            \
-      g_model_data_##symbol,                                                                     \
-      g_model_data_##symbol##_len,                                                               \
-      display_name,                                                                              \
-      add_ops,                                                                                   \
-      tensor_arena,                                                                              \
-      tensor_arena_size                                                                          \
-    );                                                                                           \
+#define DEFINE_TFLM_MAIN(symbol, display_name)                                                      \
+  int tflm_main_##symbol(uint8_t* tensor_arena, int tensor_arena_size, uint32_t (*get_time_ms)()) { \
+    auto add_ops = [&](tflite::MicroMutableOpResolver<TFLM_MODEL_OP_COUNT_##symbol>& resolver) {    \
+      TFLM_APPLY_MODEL_OPS_##symbol(resolver);                                                      \
+      return kTfLiteOk;                                                                             \
+    };                                                                                              \
+    return InvokeModel<TFLM_MODEL_OP_COUNT_##symbol>(                                               \
+      g_model_data_##symbol,                                                                        \
+      g_model_data_##symbol##_len,                                                                  \
+      display_name,                                                                                 \
+      add_ops,                                                                                      \
+      tensor_arena,                                                                                 \
+      tensor_arena_size,                                                                            \
+      get_time_ms                                                                                   \
+    );                                                                                              \
   }
 TFLM_FOREACH_MODEL(DEFINE_TFLM_MAIN)
 #undef DEFINE_TFLM_MAIN
 
-int tflm_main(uint8_t* tensor_arena, int tensor_arena_size) {
+int tflm_main(uint8_t* tensor_arena, int tensor_arena_size, uint32_t (*get_time_ms)()) {
   bool had_failure = false;
 
-#define RUN_MODEL(symbol, display_name)                                     \
-  {                                                                         \
-    const int status = tflm_main_##symbol(tensor_arena, tensor_arena_size); \
-    if (status != 0) {                                                      \
-      MicroPrintf("%s: failed (status %d).", display_name, status);         \
-      had_failure = true;                                                   \
-    }                                                                       \
-    MicroPrintf("");                                                        \
+#define RUN_MODEL(symbol, display_name)                                                  \
+  {                                                                                      \
+    const int status = tflm_main_##symbol(tensor_arena, tensor_arena_size, get_time_ms); \
+    if (status != 0) {                                                                   \
+      MicroPrintf("%s: failed (status %d).", display_name, status);                      \
+      had_failure = true;                                                                \
+    }                                                                                    \
+    MicroPrintf("");                                                                     \
   }
 TFLM_FOREACH_MODEL(RUN_MODEL);
 #undef RUN_MODEL
