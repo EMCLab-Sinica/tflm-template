@@ -4,13 +4,13 @@
 
 #include "tflm_main.h"
 #include "tensorflow/lite/micro/cortex_m_generic/debug_log_callback.h"
-#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/recording_micro_interpreter.h"
 #include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/system_setup.h"
 
 namespace {
-constexpr int kTensorArenaSize = 307200;
+constexpr int kTensorArenaSize = 10000000;
 alignas(16) uint8_t tensor_arena[kTensorArenaSize];
 
 bool g_print_outputs = false;
@@ -78,8 +78,9 @@ int InvokeModel(const unsigned char* model_data, size_t model_length, const char
   tflite::MicroMutableOpResolver<kMaxOps> op_resolver;
   TF_LITE_ENSURE_STATUS(add_ops(op_resolver));
 
-  tflite::MicroInterpreter interpreter(model, op_resolver, tensor_arena, kTensorArenaSize);
+  tflite::RecordingMicroInterpreter interpreter(model, op_resolver, tensor_arena, kTensorArenaSize);
   TF_LITE_ENSURE_STATUS(interpreter.AllocateTensors());
+  interpreter.GetMicroAllocator().PrintAllocations();
 
   TfLiteTensor* input = interpreter.input(0);
   TfLiteTensor* output = interpreter.output(0);
