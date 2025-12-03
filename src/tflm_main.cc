@@ -7,6 +7,7 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/micro/recording_micro_interpreter.h"
 #include "tensorflow/lite/micro/system_setup.h"
 
 namespace {
@@ -81,8 +82,14 @@ int InvokeModel(const unsigned char* model_data,
   tflite::MicroMutableOpResolver<kMaxOps> op_resolver;
   TF_LITE_ENSURE_STATUS(add_ops(op_resolver));
 
+#ifdef __arm__
   tflite::MicroInterpreter interpreter(model, op_resolver, tensor_arena, tensor_arena_size);
   TF_LITE_ENSURE_STATUS(interpreter.AllocateTensors());
+#else
+  tflite::RecordingMicroInterpreter interpreter(model, op_resolver, tensor_arena, tensor_arena_size);
+  TF_LITE_ENSURE_STATUS(interpreter.AllocateTensors());
+  interpreter.GetMicroAllocator().PrintAllocations();
+#endif
 
   TfLiteTensor* input = interpreter.input(0);
   TfLiteTensor* output = interpreter.output(0);
