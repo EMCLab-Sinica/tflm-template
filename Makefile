@@ -1,5 +1,6 @@
 JOBS ?= 8
 TENSOR_ARENA_SIZE ?= 307200
+FPU ?= fpv4-sp-d16
 
 TFLM_COMMIT := 6c1c1a8
 TFLM_MAKEFILE := tflite-micro/tensorflow/lite/micro/tools/make/Makefile
@@ -20,7 +21,7 @@ microlite: tflite-micro
 	$(MAKE) -j$(JOBS) -f "$(TFLM_MAKEFILE)" TENSORFLOW_ROOT=tflite-micro/ EXTERNAL_DIR=src/ BUILD_TYPE=debug microlite
 
 microlite-m7: tflite-micro
-	$(MAKE) -j$(JOBS) -f "$(TFLM_MAKEFILE)" TENSORFLOW_ROOT=tflite-micro/ EXTERNAL_DIR=src/ OPTIMIZED_KERNEL_DIR=cmsis_nn TARGET=cortex_m_generic TARGET_ARCH=cortex-m7+fp FPU=fpv4-sp-d16 microlite
+	$(MAKE) -j$(JOBS) -f "$(TFLM_MAKEFILE)" TENSORFLOW_ROOT=tflite-micro/ EXTERNAL_DIR=src/ OPTIMIZED_KERNEL_DIR=cmsis_nn TARGET=cortex_m_generic TARGET_ARCH=cortex-m7+fp FPU=$(FPU) microlite
 
 tflm_main: microlite main.cpp
 	g++ main.cpp \
@@ -46,3 +47,4 @@ dummy: microlite main.cpp
 clean:
 	$(MAKE) -f "$(TFLM_MAKEFILE)" TENSORFLOW_ROOT=tflite-micro/ EXTERNAL_DIR=src/ clean
 	rm -rf tflm_main
+	
