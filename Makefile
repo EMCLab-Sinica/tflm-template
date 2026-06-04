@@ -47,4 +47,4 @@ dummy: microlite main.cpp
 clean:
 	$(MAKE) -f "$(TFLM_MAKEFILE)" TENSORFLOW_ROOT=tflite-micro/ EXTERNAL_DIR=src/ clean
 	rm -rf tflm_main
-	
+
