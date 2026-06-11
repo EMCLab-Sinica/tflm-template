@@ -1,6 +1,6 @@
 JOBS ?= 8
 TENSOR_ARENA_SIZE ?= 307200
-FPU ?= fpv4-sp-d16
+FPU ?= fpv5-sp-d16
 
 TFLM_COMMIT := 6c1c1a8
 TFLM_MAKEFILE := tflite-micro/tensorflow/lite/micro/tools/make/Makefile
