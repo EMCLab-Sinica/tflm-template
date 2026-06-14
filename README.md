@@ -26,5 +26,3 @@ After `make`, execute the host runner to invoke all configured models:
 ```
 ./tflm_main
 ```
-
-You can override the default 300KB tensor arena used by the host runner by passing `TENSOR_ARENA_SIZE=<bytes>` to `make`.
