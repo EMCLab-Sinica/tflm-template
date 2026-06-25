@@ -17,8 +17,6 @@ import tflite
 def sanitize(name):
     """Return a C identifier derived from a filename stem."""
     cleaned = re.sub(r"[^A-Za-z0-9_]", "_", name)
-    if cleaned and cleaned[0].isdigit():
-        cleaned = f"_{cleaned}"
     return cleaned
 
 
